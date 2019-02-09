@@ -1,0 +1,16 @@
+static struct hd_driveid hd;
+int fd;
+
+if ((fd = open("/dev/hda", O_RDONLY | O_NONBLOCK)) < 0) {
+    printf("ERROR opening /dev/hda\n");
+    exit(1);
+}
+
+if (!ioctl(fd, HDIO_GET_IDENTITY, &hd)) {
+    printf("%.20s\n", hd.serial_no);
+} else if (errno == -ENOMSG) {
+    printf("No serial number available\n");
+} else {
+    perror("ERROR: HDIO_GET_IDENTITY");
+    exit(1);
+}

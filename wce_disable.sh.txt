@@ -1,0 +1,22 @@
+#!/bin/bash
+
+. /etc/sysconfig/persistent_ha_data
+
+# this script can remain simple thanks to two assumptions
+# 1) mgmt array is already active
+# 2) diskless nodes already have canister drive mounted so we don't have to figure out what it is
+
+
+if  nodeattr -Q diskless--exporter; then
+    # find which drive has HA data, check if it's  SSD and disable WC if it is
+    drive=$(findmnt -n -o SOURCE  -T  $PS_MNT)
+    # trim parititon number
+    drive=${drive%%[0-9]*}
+    #hdparm -K1 -W0 $drive
+    hdparm -W $drive | egrep -q on && hdparm -K1 -W0 $drive
+else
+    drives=$(lsblk -s -i /dev/mapper/vg0-lv_root 2> /dev/null | awk '$NF == "disk" {gsub(/[^a-z]/,"",$(NF-5)); print $(NF-5)}')
+    for drive in $drives; do
+        hdparm  -K1 -W0 /dev/$drive
+    done
+fi
